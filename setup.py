@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pose-estimate-as-library", 
-    version="0.0.1",
+    version="0.0.2",
     install_requires=[
         "mmcv-full==1.5.3",
         "mmdet==2.25.0",
@@ -24,8 +24,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache License 2.0",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
+    license='Apache License 2.0',
     python_requires='>=3.8',
 )
