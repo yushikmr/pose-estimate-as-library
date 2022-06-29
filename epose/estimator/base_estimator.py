@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""Pose Estimation Modules
+"""
+
 import json
 import numpy as np
 from mmdet.models import build_detector
@@ -22,6 +26,8 @@ class BasePoseEstimator:
         self._loadconf(detmodel_config_path, "detcfg")
         self._loadconf(posemodel_config_path, "posecfg")
 
+        self._del_pretrained()
+
         self.det_model = self._build_detection_model(
             trained_det_model_path, map_location=map_location)
         self.pose_model = self._build_pose_model(
@@ -30,7 +36,24 @@ class BasePoseEstimator:
         if not dataset_name:
             self.dataset = self.posecfg.data.test["type"]
 
-    def estimate_from_imgfile(self, img_path: str, cat_id=1):
+    def _del_pretrained(self):
+        if hasattr(self, "posecfg"):
+            if hasattr(self.posecfg, "model"):
+                if hasattr(self.posecfg.model, "pretrained"):
+                    self.posecfg.model["pretrained"] = None
+                    self.posecfg.model.pretrained = None
+
+    def estimate_pose_from_imgfile(self, img_path: str, cat_id: int = 1):
+        """estimate pose from image file
+        Args:
+            img_path(str):input image path
+            cat_id(int):category id in COCO dataset. 1 means person.
+        Returns:
+            pose_results(list of dict): results of estimation.
+                each elements is  dict, and contains
+                `bbox` and `keypoints` keys.
+            returned_outputs(list of dict): the heatmatps of pose estimation.
+        """
 
         person_results = self.estimate_person(img_path, cat_id=cat_id)
 
