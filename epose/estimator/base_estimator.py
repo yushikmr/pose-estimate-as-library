@@ -1,9 +1,10 @@
 import json
 import numpy as np
-from PIL import Image
 from mmdet.models import build_detector
+from mmdet.apis import inference_detector
 from mmpose.models import build_posenet
-from mmpose.apis import inference_top_down_pose_model, vis_pose_result
+from mmpose.apis import (inference_top_down_pose_model,
+                         vis_pose_result, process_mmdet_results)
 from mmcv.runner import load_checkpoint
 
 from epose import Cfg
@@ -13,27 +14,65 @@ class BasePoseEstimator:
     def __init__(self,
                  posemodel_config_path: str,
                  detmodel_config_path: str,
-                 trained_det_model_path: str) -> None:
+                 trained_det_model_path: str,
+                 trained_pose_model_path: str,
+                 dataset_name: str = None,
+                 map_location: str = "cpu") -> None:
 
         self._loadconf(detmodel_config_path, "detcfg")
         self._loadconf(posemodel_config_path, "posecfg")
 
-        self.det_model = self._build_detection_model(trained_det_model_path)
+        self.det_model = self._build_detection_model(
+            trained_det_model_path, map_location=map_location)
+        self.pose_model = self._build_pose_model(
+            trained_pose_model_path, map_location=map_location)
 
-    def predict_from_imgfile(self, path: str):
-        pass
+        if not dataset_name:
+            self.dataset = self.posecfg.data.test["type"]
 
-    def predict_from_tensor(self, img):
-        pass
+    def estimate_from_imgfile(self, img_path: str, cat_id=1):
 
-    def predict_from_array(self, img):
-        pass
+        person_results = self.estimate_person(img_path, cat_id=cat_id)
 
-    def visualize_result(self):
-        pass
+        pose_results, returned_outputs = inference_top_down_pose_model(
+            self.pose_model,
+            img_path,
+            person_results,
+            bbox_thr=0.3,
+            format='xyxy',
+            return_heatmap=True
+        )
 
-    def _load_pose_weight(self, checkpoint_pass):
-        pass
+        return pose_results, returned_outputs
+
+    def estimate_person(self, img_path: str, cat_id: int = 1):
+        """
+        """
+        det_results = inference_detector(self.det_model, img_path)
+        person_results = process_mmdet_results(det_results, cat_id=cat_id)
+        return person_results
+
+    def visualize_result(self,
+                         img_path,
+                         pose_results=None,
+                         cat_id: int = 1,
+                         dataset: str = "TopDownCocoDataset",
+                         with_estimate: bool = False) -> np.array:
+
+        if with_estimate:
+            pose_results, _ = self.estimate_from_imgfile(
+                img_path=img_path, cat_id=cat_id)
+        else:
+            if pose_results is None:
+                raise ValueError("")
+        return_img = \
+            vis_pose_result(
+                self.pose_model,
+                img_path,
+                pose_results,
+                dataset=dataset,
+                show=False)
+        return return_img
 
     def _loadconf(self, configpath, mode="posecfg"):
 
@@ -57,3 +96,17 @@ class BasePoseEstimator:
         det_model.cfg = self.detcfg
 
         return det_model
+
+    def _build_pose_model(self, trained_model_path, map_location):
+        """
+        """
+        pose_model = build_posenet(self.posecfg.model)
+        _ = load_checkpoint(
+            pose_model,
+            trained_model_path,
+            map_location=map_location
+        )
+        _ = pose_model.eval()
+        pose_model.cfg = self.posecfg
+
+        return pose_model
