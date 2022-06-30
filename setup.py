@@ -4,15 +4,16 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pose-estimate-as-library", 
+    name="pose-estimate-as-library",
     version="0.0.2",
     install_requires=[
-        "mmcv-full==1.5.3",
-        "mmdet==2.25.0",
+        "mmcv-full>=1.3.8",
+        "mmdet>=2.14.0",
         "mmpose==0.27.0",
-        "torch==1.13.0",
-        "torchvision==0.14.0",
-        "torchaudio==0.14.0"
+        "mmtrack>=0.6.0",
+        "torch>=1.3",
+        "torchvision",
+        "torchaudio"
     ],
 
     author="yushikmr",

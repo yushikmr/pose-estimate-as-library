@@ -83,7 +83,7 @@ class BasePoseEstimator:
                          with_estimate: bool = False) -> np.array:
 
         if with_estimate:
-            pose_results, _ = self.estimate_from_imgfile(
+            pose_results, _ = self.estimate_pose_from_imgfile(
                 img_path=img_path, cat_id=cat_id)
         else:
             if pose_results is None:
